@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: reportefur
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PW}
+    driver-class-name: ${JDBC_DRIVER}
+
+  sql:
+    init:
+      mode: always
+      continue-on-error: false
+
+  session:
+    jdbc:
+      initialize-schema: always
+      schema: classpath:org/springframework/session/jdbc/schema-@@platform@@.sql
+      table-name: SPRING_SESSION
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+server:
+  port: ${SPRING_PORT_ORDER}
+  address: ${SPRING_ADDRESS_SERVER}
+  servlet:
+    session:
+      cookie:
+        http-only: true
+      timeout: 20m
