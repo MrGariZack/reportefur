@@ -134,7 +134,7 @@ public class VehiculoDto {
         this.esEnsenanza = vehiculos.getEsEnsenanza();
         this.fechaVencimientoGnv = vehiculos.getFechaVencimientoGnv();
         this.conversionGnv = vehiculos.tieneConversionGnv() ? "Y" : "N";
-        this.potencia = vehiculos.getPotencia();
+        this.potencia = vehiculos.getPotencia() != null ? vehiculos.getPotencia() : 0;
         this.catalizador = vehiculos.getCatalizador();
         this.capacidadCarga = vehiculos.getCapacidadCarga();
         this.carroceriaTablet = vehiculos.getCarroceriaTablet();

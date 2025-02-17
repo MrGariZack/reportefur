@@ -176,7 +176,7 @@ public class Vehiculos {
     }
 
     public boolean tieneConversionGnv() {
-        return conversionGnv.equalsIgnoreCase("Y");
+        return conversionGnv != null && conversionGnv.equalsIgnoreCase("Y");
     }
 
     public void setConversionGnv(boolean conversion) {

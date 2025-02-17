@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DefMecanizados {
+public class DefectosData {
   private String codigoDefecto;
   private String descripcionDefecto;
   private String grupoDefecto;

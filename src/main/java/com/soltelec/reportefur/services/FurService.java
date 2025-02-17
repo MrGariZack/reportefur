@@ -15,7 +15,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.soltelec.reportefur.Utils;
 import com.soltelec.reportefur.models.dtos.PruebaInfo;
-import com.soltelec.reportefur.models.dtos.defectos.DefMecanizados;
+
+import com.soltelec.reportefur.models.dtos.defectos.DefectosData;
 import com.soltelec.reportefur.models.dtos.entities.PropietarioDto;
 import com.soltelec.reportefur.models.dtos.entities.VehiculoDto;
 import com.soltelec.reportefur.models.dtos.pruebas.TipoPrueba;
@@ -31,6 +32,7 @@ import com.soltelec.reportefur.models.entities.Dgsg;
 import com.soltelec.reportefur.models.entities.Equipo;
 import com.soltelec.reportefur.models.entities.Fotos;
 import com.soltelec.reportefur.models.entities.Grupos;
+import com.soltelec.reportefur.models.entities.GruposSubGrupos;
 import com.soltelec.reportefur.models.entities.HojaPruebas;
 import com.soltelec.reportefur.models.entities.LineasVehiculo;
 import com.soltelec.reportefur.models.entities.Llantas;
@@ -54,6 +56,7 @@ import com.soltelec.reportefur.repositories.DgsgRep;
 import com.soltelec.reportefur.repositories.EquipoRep;
 import com.soltelec.reportefur.repositories.FotosRep;
 import com.soltelec.reportefur.repositories.GruposRep;
+import com.soltelec.reportefur.repositories.GruposSubGruposRep;
 import com.soltelec.reportefur.repositories.HojaPruebasRep;
 import com.soltelec.reportefur.repositories.LineasVehiculoRep;
 import com.soltelec.reportefur.repositories.LlantasRep;
@@ -126,7 +129,7 @@ public class FurService {
   private final TipoPruebaRep tipoPruebaRep;
   private final UsuariosRep usuariosRep;
   private final GruposRep gruposRep;
-  
+  private final GruposSubGruposRep gruposSubGruposRep;
 
   private final DgsgRep dgsgRep;
 
@@ -146,7 +149,7 @@ public class FurService {
 
     Map<String, Object> allParams = new HashMap<>();
 
-    allParams.put("codigoPrueba", "codigoPrueba");
+
     allParams.put("certificadoOnac", "certificadoOnac");
 
     HojaPruebas hojaPruebas = hojaPruebasRep.findById(idHojaPruebas)
@@ -177,7 +180,9 @@ public class FurService {
     TipoCombustible tipoCombustible = tipoCombustibleRep.findById(vehiculo.getTipoCombustible())
       .orElseThrow(() -> new RuntimeException("TipoCombustible not found"));
 
-    TipoCarroceria tipoCarroceria = tipoCarroceriaRep.findById(vehiculo.getCarroceria())
+    Integer carroceria = vehiculo.getCarroceria() == null ? 1 : vehiculo.getCarroceria();
+
+    TipoCarroceria tipoCarroceria = tipoCarroceriaRep.findById(carroceria) 
      .orElseThrow(() -> new RuntimeException("TipoCarroceria not found"));
 
     Propietarios propietarios = propietariosRep.findById(vehiculo.getIdPropietario())
@@ -236,6 +241,7 @@ public class FurService {
     List<Medidas> listaMedidasGases = medidasRep.findByIdPrueba(idPruebasGases);
     List<Medidas> listaMedidasSensorial = medidasRep.findByIdPrueba(idPruebasSensorial);
     List<Defxprueba> listaDefxpruebas = defxpruebaRep.findByIdPrueba(idPruebasSensorial);
+    List<Defxprueba> listaDefxpruebasMecanizados = defxpruebaRep.findByHojaPruebaId(idHojaPruebas);
 
 
 
@@ -258,11 +264,11 @@ public class FurService {
 
     Map<String, Object> vehiculoParams = getVehiculoData(vehiculoDto);
 
-    Map<String, Object> lucesParams = getLucesData(listaMedidas);
+    Map<String, Object> lucesParams = getLucesData(listaMedidas, vehiculoDto);
 
     Map<String, Object> suspensionParams = getSuspensionData(listaMedidasSuspension);
 
-    Map<String, Object> frenosParams = getFrenosData(listaMedidasFreno);
+    Map<String, Object> frenosParams = getFrenosData(listaMedidasFreno, vehiculoDto);
 
     Map<String, Object> desviacionesParams = getDesviacionesData(listaMedidasDesviacion);
 
@@ -272,7 +278,9 @@ public class FurService {
 
     Map<String, Object> dieselParams = getDieselData(listaMedidasGases);
 
-    Map<String, Object> defectosMecanizadosParams = getDefectosMecanizadosData(listaDefxpruebas, vehiculoDto);
+    Map<String, Object> defectosSensorialesParams = getDefectosSensorialesData(listaDefxpruebas, vehiculoDto);
+
+    Map<String, Object> defectosMecanizadosParams = getDefectosMecanizadosData(listaDefxpruebasMecanizados, vehiculoDto);
 
     Map<String, Object> sensorialParams = getLabradoPresionData(listaMedidasSensorial);
 
@@ -294,7 +302,7 @@ public class FurService {
     allParams.putAll(frenosParams);
     allParams.putAll(desviacionesParams);
     allParams.putAll(dispositivosCobroParams);
-    allParams.putAll(defectosMecanizadosParams);
+    allParams.putAll(defectosSensorialesParams);
     allParams.putAll(sensorialParams); 
     allParams.putAll(equiposParams);
     allParams.putAll(fotosParams);
@@ -302,6 +310,7 @@ public class FurService {
     allParams.putAll(ottoParams);
     allParams.putAll(dieselParams);
     allParams.putAll(responsablesParams);
+    allParams.putAll(defectosMecanizadosParams);
 
     // load .jasper file
     InputStream reportStream = getClass().getResourceAsStream("/"+FOLDER+"/"+FUR_NAME+EXTENSION);
@@ -322,10 +331,11 @@ public class FurService {
 
     String cdaNombre = cda.getNombre();
     String cdaNit = cda.getNit();
-    String cdaContacto = cda.getCelular()+" --- "+cda.getTelefono();
+    String cdaContacto = cda.getCelular()+" -- "+cda.getTelefono();
     String cdaDireccion = cda.getDireccion();
     String cdaCiudad = cda.getCiudad();
     String cdaCorreo = cda.getCorreo();
+    String cdaCertificadoOnac = cda.getCertificadoConformidad();
 
     params.put("cdaNombre", cdaNombre);
     params.put("cdaNit", cdaNit);
@@ -333,6 +343,7 @@ public class FurService {
     params.put("cdaDireccion", cdaDireccion);
     params.put("cdaCiudad", cdaCiudad);
     params.put("cdaCorreo", cdaCorreo);
+    params.put("certificadoOnac", cdaCertificadoOnac);
     return params;
   }
 
@@ -367,7 +378,7 @@ public class FurService {
     params.put("fechaMatricula", vehiculoDto.getFechaRegistro().toString());
     params.put("colorVehiculo", vehiculoDto.getNombreColor());
     params.put("combustibleVehiculo", vehiculoDto.getNombreCombustible());
-    params.put("vinVehiculo", vehiculoDto.getVin());
+    params.put("vinVehiculo", vehiculoDto.getNumeroChasis());
     params.put("numeroMotorVehiculo", vehiculoDto.getNumeroMotor());
     params.put("tiemposMotor", vehiculoDto.getTiemposMotor().toString());
     params.put("cilindraje", vehiculoDto.getCilindraje().toString());
@@ -385,9 +396,8 @@ public class FurService {
     return params;
   }
 
-    public Map<String, Object> getLucesData(List<Medidas> listaMedidas) {
+    public Map<String, Object> getLucesData(List<Medidas> listaMedidas, VehiculoDto vehiculoDto) {
       Map<String, Object> params = new HashMap<>();
-      DecimalFormat df = new DecimalFormat("#0.00"); // Formato de 2 decimales
 
       // Mapa para parámetros de valorMedida
       Map<Integer, String> keyMap = Map.ofEntries(
@@ -398,7 +408,8 @@ public class FurService {
           Map.entry(2036, "IntAD1"), Map.entry(2037, "IntAD2"), Map.entry(2038, "IntAD3"),
           Map.entry(2032, "IntAI1"), Map.entry(2033, "IntAI2"), Map.entry(2034, "IntAI3"),
           Map.entry(2050, "IntED1"), Map.entry(2051, "IntED2"), Map.entry(2052, "IntED3"),
-          Map.entry(2053, "IntEI1"), Map.entry(2054, "IntEI2"), Map.entry(2055, "IntEI3")
+          Map.entry(2053, "IntEI1"), Map.entry(2054, "IntEI2"), Map.entry(2055, "IntEI3"),
+          Map.entry(2013, "AngIncD1"), Map.entry(2014, "IntBD1")
       );
 
       // Mapa simplificado para parámetros Sim
@@ -423,7 +434,7 @@ public class FurService {
           if (keyMap.containsKey(measureType)) {
               Float valor = medida.getValorMedida();
               if (valor != null) { // Evitar NullPointerException
-                  params.put(keyMap.get(measureType), df.format(valor));
+                  params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
               }
           }
 
@@ -442,23 +453,39 @@ public class FurService {
           }
       }
 
-      // Agregar resultados finales al mapa (formatear sumaLuces)
-      params.put("sumaLuces", df.format(sumaLuces)); // Ej: "125.40"
-      params.put("perSumaLuces", "225"); // Valor permisible
 
+
+      String sumaLucesFormateada = Utils.redondeoNorma(sumaLuces);
+
+      // Agregar resultados finales al mapa (formatear sumaLuces)
+      params.put("sumaLuces", sumaLucesFormateada); // Ej: "125.40"
+
+      // Valores permisibles según tipo de vehículo
+      Map<Integer, Map<String, String>> permisiblesPorTipo = Map.of(
+      // Motocicletas
+      4, Map.of(
+          "perSumaLuces", "---"
+      )
+      );
+
+      // Obtener el tipo de vehículo del contexto
+      Integer tipoVehiculo = vehiculoDto.getTipo();
+      Map<String, String> permisibles = permisiblesPorTipo.getOrDefault(tipoVehiculo, permisiblesPorTipo.get(0));
+      
+      // Agregar los permisibles al mapa de parámetros
+      params.putAll(permisibles);
       return params;
   }
 
   public Map<String, Object> getSuspensionData(List<Medidas> listaMedidasSuspension) {
     Map<String, Object> params = new HashMap<>();
-    DecimalFormat df = new DecimalFormat("#0.00"); // Formato de 2 decimales
 
     // Mapa para parámetros de valorMedida
     Map<Integer, String> keyMap = Map.ofEntries(
-        Map.entry(6016, "DelanteraIzq"), 
-        Map.entry(6017, "DelanteraDer"),
-        Map.entry(6020, "TraseraIzq"), 
-        Map.entry(6021, "TraseraDerecha")
+        Map.entry(6016, "DelanteraDer"), 
+        Map.entry(6017, "TraseraDerecha"),
+        Map.entry(6020, "DelanteraIzq"), 
+        Map.entry(6021, "TraseraIzq")
     );
 
     // Procesar cada medida
@@ -470,7 +497,7 @@ public class FurService {
             Float valor = medida.getValorMedida();
 
             if (valor != null && valor > 40) { // Evitar NullPointerException
-                params.put(keyMap.get(measureType), df.format(valor));
+                params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
             }
         }
 
@@ -483,9 +510,8 @@ public class FurService {
  
   }
 
-  public Map<String, Object> getFrenosData(List <Medidas> listaMedidasFreno) {
+  public Map<String, Object> getFrenosData(List <Medidas> listaMedidasFreno, VehiculoDto vehiculoDto) {
     Map<String, Object> params = new HashMap<>();
-    DecimalFormat df = new DecimalFormat("#0.00"); // Formato de 2 decimales
 
     Map<Integer, String> keyMap = Map.ofEntries(
       Map.entry(5012, "FrzEje1Izq"), 
@@ -542,7 +568,7 @@ public class FurService {
 
         // 1. Agregar valores formateados al mapa
         if (keyMap.containsKey(measureType) && valor != null) {
-          params.put(keyMap.get(measureType), df.format(valor));
+          params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
         }
 
         // 2. Sumar los valores de los códigos específicos
@@ -567,16 +593,27 @@ public class FurService {
       }
 
     //FRENOS AUXILIARES DATOS
-    params.put("FrzSumIzq", df.format(frzSumIzq));
-    params.put("PsSumIzq", df.format(psSumIzq));
-    params.put("FrzSumDer", df.format(frzSumDer));
-    params.put("PsSumDer", df.format(psSumDer));
-    //PERMISIBLES
-    params.put("PerDeseqB", "20-30"); //PERMISIBLE
-    params.put("PerDeseq", ">30"); //PERMISIBLE
-    params.put("PerEficTotal", "50"); //PERMISIBLE
-    params.put("PerEficAux", "18"); //PERMISIBLE
+    params.put("FrzSumIzq", Utils.redondeoNorma(frzSumIzq));
+    params.put("PsSumIzq", Utils.redondeoNorma(psSumIzq));
+    params.put("FrzSumDer", Utils.redondeoNorma(frzSumDer));
+    params.put("PsSumDer", Utils.redondeoNorma(psSumDer));
 
+
+    Map<Integer, Map<String, String>> permisiblesPorTipo = Map.of(
+      // Motocicletas
+      4, Map.of(
+          "PerDeseqB", "---",
+          "PerDeseq", "---",
+          "PerEficTotal", "30",
+          "PerEficAux", "---"
+      )
+  );
+      // Obtener el tipo de vehículo del contexto
+      Integer tipoVehiculo = vehiculoDto.getTipo();
+      Map<String, String> permisibles = permisiblesPorTipo.getOrDefault(tipoVehiculo, permisiblesPorTipo.get(0));
+      
+      // Agregar los permisibles al mapa de parámetros
+      params.putAll(permisibles);
 
     return params;
   }
@@ -740,9 +777,9 @@ public class FurService {
     return params;
   }
 
-public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefxprueba, VehiculoDto vehiculoDto) {
+public Map<String, Object> getDefectosSensorialesData(List<Defxprueba> listaDefxprueba, VehiculoDto vehiculoDto) {
     Map<String, Object> params = new HashMap<>();
-    List<DefMecanizados> defectosMecanizados = new ArrayList<>();
+    List<DefectosData> defectosSensoriales = new ArrayList<>();
     Map<String, Integer> grupoCount = new HashMap<>();
     int totalA = 0;
     int totalB = 0;
@@ -752,7 +789,6 @@ public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefx
         
         Defectos defecto = defectosRep.findByIdDefecto(defxprueba.getIdDefecto());
         Dgsg dgsg = dgsgRep.findByIdDefectoAndTipoVehiculo(defxprueba.getIdDefecto(), vehiculoDto.getTipo()).orElse(null);
-        System.out.println("Defectos lista" + dgsg);
         Grupos grupos = gruposRep.findById(dgsg.getIdGrupo()).orElse(null);
         String tipo = defecto.getTipoDefecto();
         String grupo = grupos.getNombreGrupo();
@@ -767,7 +803,7 @@ public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefx
         grupoCount.put(grupo, grupoCount.getOrDefault(grupo, 0) + 1);
         
         // Agregar defecto
-            defectosMecanizados.add(new DefMecanizados(
+            defectosSensoriales.add(new DefectosData(
                 defecto.getCodigoResolucion(),
                 defecto.getNombreProblema(),
                 grupos.getNombreGrupo(),
@@ -778,7 +814,67 @@ public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefx
    
     }
 
-    JRBeanCollectionDataSource defectosDataSource = new JRBeanCollectionDataSource(defectosMecanizados);
+    JRBeanCollectionDataSource defectosDataSource = new JRBeanCollectionDataSource(defectosSensoriales);
+
+    // Agregar totales
+    params.put("aTotal", String.valueOf(totalA));
+    params.put("bTotal", String.valueOf(totalB));
+    
+    // Agregar conteo por grupo
+    for (Map.Entry<String, Integer> entry : grupoCount.entrySet()) {
+        params.put("grupo_" + entry.getKey(), String.valueOf(entry.getValue()));
+    }
+
+    params.put("defectosSensorial", defectosDataSource);
+
+    return params;
+  }
+
+
+  public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefxprueba, VehiculoDto vehiculoDto) {
+    Map<String, Object> params = new HashMap<>();
+    List<DefectosData> defectosSensoriales = new ArrayList<>();
+    Map<String, Integer> grupoCount = new HashMap<>();
+    int totalA = 0;
+    int totalB = 0;
+    
+    for (Defxprueba defxprueba : listaDefxprueba) {
+    
+        
+        Defectos defecto = defectosRep.findByIdDefecto(defxprueba.getIdDefecto());
+        System.out.println("Defectos lista" + defecto);
+        System.out.println("Id defecto" + defxprueba.getIdDefecto() );
+        System.out.println("Tipo vehiculo" + vehiculoDto.getTipo());
+       // Dgsg dgsg = dgsgRep.findByIdDefectoAndTipoVehiculo(defxprueba.getIdDefecto(), vehiculoDto.getTipo()).orElse(null);
+
+        GruposSubGrupos gsg = gruposSubGruposRep.findByCartypeIdAndSubGroupId(vehiculoDto.getTipo(), defecto.getDefGroupsSub()).orElse(null);
+
+        Grupos grupos = gruposRep.findById(gsg.getGroupId()).orElse(null);
+        String tipo = defecto.getTipoDefecto();
+        String grupo = grupos.getNombreGrupo();
+        
+        boolean esA = "A".equals(tipo);
+
+        // Contar tipos A y B
+        if ("A".equals(tipo)) totalA++;
+        if ("B".equals(tipo)) totalB++;
+        
+        // Contar por grupo
+        grupoCount.put(grupo, grupoCount.getOrDefault(grupo, 0) + 1);
+        
+        // Agregar defecto
+            defectosSensoriales.add(new DefectosData(
+                defecto.getCodigoResolucion(),
+                defecto.getNombreProblema(),
+                grupos.getNombreGrupo(),
+                esA ? "X" : "",
+                esA ? "" : "X"
+            ));
+        
+   
+    }
+
+    JRBeanCollectionDataSource defectosDataSource = new JRBeanCollectionDataSource(defectosSensoriales);
 
     // Agregar totales
     params.put("aTotal", String.valueOf(totalA));
@@ -1012,7 +1108,7 @@ public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefx
     // Obtener el serial relevante solo si tipoPrueba == 1
     String serial = (tipoPrueba == 1) ? getSerialRelevante(serialCompleto) : serialCompleto;
 
-    Optional<Equipo> equipoOptional = equiposRep.findBySerial(serial);
+    Optional<Equipo> equipoOptional = equiposRep.findBySerialResolucion(serial);
     if (equipoOptional.isPresent()) {
         Equipo equipo = equipoOptional.get();
         PruebaInfo pruebaInfo = unifiedKeyMap.get(tipoPrueba);
@@ -1026,7 +1122,7 @@ public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefx
 
     if (tipoPrueba == 1){
         String serialHolguras = serialCompleto.split(";")[1].trim();
-        Optional<Equipo> equipoHolguras = equiposRep.findBySerial(serialHolguras);
+        Optional<Equipo> equipoHolguras = equiposRep.findBySerialResolucion(serialHolguras);
         System.out.println("Holguras data" + equipoHolguras);
         if (equipoHolguras.isPresent()) {
           Equipo equipo = equipoHolguras.get();
@@ -1074,6 +1170,8 @@ public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefx
     JRBeanCollectionDataSource responsablesDataSource = new JRBeanCollectionDataSource(responsablesPruebas);
     params.put("pruebasResponsablesList", responsablesDataSource);
     params.put("nombreResp", responsableCda);
+    String codigoPrueba = hojaPruebas.getNumeroHojaPrueba().toString() + " - " + hojaPruebas.getNumeroIntentos().toString();
+    params.put("codigoPrueba",codigoPrueba);
     return params;
 
 
@@ -1165,7 +1263,7 @@ public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefx
     MarcasVehiculoRep marcasVehiculoRep, LineasVehiculoRep lineasVehiculoRep, ColorRep coloresRep,
     TipoCombustibleRep tipoCombustibleRep, TipoCarroceriaRep tipoCarroceriaRep, MedidasRep medidasRep, PruebasRep pruebasRep, LlantasRep llantasRep,
     EquipoRep equiposRep, FotosRep fotosRep, DefxpruebaRep defxpruebaRep, DefectosRep defectosRep, GruposRep gruposRep,
-    DgsgRep dgsgRep, TipoPruebaRep tipoPruebaRep, UsuariosRep usuariosRep) {
+    DgsgRep dgsgRep, TipoPruebaRep tipoPruebaRep, UsuariosRep usuariosRep, GruposSubGruposRep gruposSubGruposRep) {
       this.cdaRep = cdaRep;
       this.hojaPruebasRep = hojaPruebasRep;
       this.vehiculoRep = vehiculoRep;
@@ -1191,6 +1289,7 @@ public Map<String, Object> getDefectosMecanizadosData(List<Defxprueba> listaDefx
       this.tipoPruebaRep = tipoPruebaRep;
       this.usuariosRep = usuariosRep;
       this.dgsgRep = dgsgRep;
+      this.gruposSubGruposRep = gruposSubGruposRep;
   }
 
 

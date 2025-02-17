@@ -15,7 +15,11 @@ public interface EquipoRep extends CrudRepository<Equipo, Integer> {
     @Query("Select * from equipos")
     List<Equipo> listAll();
 
-    @Query("SELECT * FROM equipos e WHERE e.serial = :serial limit 1")
+    @Query("SELECT * FROM equipos e WHERE e.serial LIKE CONCAT('%', :serial, '%') limit 1")
     Optional<Equipo> findBySerial(@Param("serial") String serial);
+
+    
+    @Query("SELECT * FROM equipos e WHERE e.serialresolucion LIKE CONCAT('%', :serialResolucion, '%') limit 1")
+    Optional<Equipo> findBySerialResolucion(@Param("serialResolucion") String serialResolucion);
     
 } 

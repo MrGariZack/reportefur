@@ -18,7 +18,7 @@ import com.soltelec.reportefur.services.FurService;
 
 @Controller
 @RequestMapping
-@CrossOrigin(origins = "*")
+
 
 public class FurController {
   private final FurService furService;
