@@ -5,7 +5,7 @@ import org.springframework.data.relational.core.mapping.Column;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 public class HojaPruebas {
@@ -32,7 +32,7 @@ public class HojaPruebas {
     private String impreso;
     
     @Column("Fecha_ingreso_vehiculo")
-    private LocalDateTime fechaIngreso;
+    private Date fechaIngreso;
     
     @Column("Anulado")
     private String anulado;
@@ -41,13 +41,13 @@ public class HojaPruebas {
     private String aprobado;
     
     @Column("Fecha_expiracion_revision")
-    private LocalDateTime fechaExpiracionRevision;
+    private Date fechaExpiracionRevision;
     
     @Column("fecha_exp_soat")
-    private LocalDateTime fechaExpedicionSoat;
+    private Date fechaExpedicionSoat;
     
     @Column("fecha_venc_soat")
-    private LocalDateTime fechaVencimientoSoat;
+    private Date fechaVencimientoSoat;
     
     @Column("nro_soat")
     private String numeroSoat;
@@ -65,7 +65,7 @@ public class HojaPruebas {
     private String cerrada;
     
     @Column("Fecha_expedicion_certificados")
-    private LocalDateTime fechaExpedicionCertificados;
+    private Date fechaExpedicionCertificados;
     
     @Column("Comentarios_cda")
     private String comentariosCda;
@@ -116,7 +116,7 @@ public class HojaPruebas {
     private String kilometrajeRtm;
     
     @Column("fecha_venc_gnv")
-    private LocalDateTime fechaVencimientoGnv;
+    private Date fechaVencimientoGnv;
     
     @Column("MetodoMedicionRpm")
     private String metodoMedicionRpm;

@@ -1,8 +1,8 @@
 package com.soltelec.reportefur.services;
 
 import java.io.InputStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -78,6 +78,13 @@ import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+
+import com.soltelec.reportefur.services.permisibles.GasesPermisiblesService;
+import com.soltelec.reportefur.services.permisibles.LucesPermisiblesService;
+import com.soltelec.reportefur.services.permisibles.SuspensionPermisiblesService;
+import com.soltelec.reportefur.services.permisibles.FrenosPermisiblesService;
+import com.soltelec.reportefur.services.permisibles.DesviacionesPermisiblesService;
+import com.soltelec.reportefur.services.permisibles.DieselPermisiblesService;
 
 @Service
 public class FurService {
@@ -266,17 +273,17 @@ public class FurService {
 
     Map<String, Object> lucesParams = getLucesData(listaMedidas, vehiculoDto);
 
-    Map<String, Object> suspensionParams = getSuspensionData(listaMedidasSuspension);
+    Map<String, Object> suspensionParams = getSuspensionData(listaMedidasSuspension, vehiculoDto);
 
     Map<String, Object> frenosParams = getFrenosData(listaMedidasFreno, vehiculoDto);
 
-    Map<String, Object> desviacionesParams = getDesviacionesData(listaMedidasDesviacion);
+    Map<String, Object> desviacionesParams = getDesviacionesData(listaMedidasDesviacion, vehiculoDto);
 
     Map<String, Object> dispositivosCobroParams = getDispositivosCobroData(vehiculoDto, listaMedidasTaximetro);
 
-    Map<String, Object> ottoParams = getOttoData(listaMedidasGases);
+    Map<String, Object> ottoParams = getOttoData(listaMedidasGases, vehiculoDto, hojaPruebas);
 
-    Map<String, Object> dieselParams = getDieselData(listaMedidasGases);
+    Map<String, Object> dieselParams = getDieselData(listaMedidasGases, vehiculoDto, hojaPruebas);
 
     Map<String, Object> defectosSensorialesParams = getDefectosSensorialesData(listaDefxpruebas, vehiculoDto);
 
@@ -397,34 +404,34 @@ public class FurService {
   }
 
     public Map<String, Object> getLucesData(List<Medidas> listaMedidas, VehiculoDto vehiculoDto) {
-      Map<String, Object> params = new HashMap<>();
+        Map<String, Object> params = new HashMap<>();
+        LucesPermisiblesService lucesPermisiblesService = new LucesPermisiblesService();
+        float sumaLuces = 0;
 
       // Mapa para parámetros de valorMedida
       Map<Integer, String> keyMap = Map.ofEntries(
-          Map.entry(2024, "IntBD1"), Map.entry(2025, "IntBD2"), Map.entry(2026, "IntBD3"),
-          Map.entry(2040, "AngIncD1"), Map.entry(2041, "AngIncD2"), Map.entry(2042, "AngIncD3"),
-          Map.entry(2031, "IntBI1"), Map.entry(2030, "IntBI2"), Map.entry(2029, "IntBI3"),
-          Map.entry(2044, "AngIncI1"), Map.entry(2045, "AngIncI2"), Map.entry(2046, "AngIncI3"),
-          Map.entry(2036, "IntAD1"), Map.entry(2037, "IntAD2"), Map.entry(2038, "IntAD3"),
-          Map.entry(2032, "IntAI1"), Map.entry(2033, "IntAI2"), Map.entry(2034, "IntAI3"),
-          Map.entry(2050, "IntED1"), Map.entry(2051, "IntED2"), Map.entry(2052, "IntED3"),
-          Map.entry(2053, "IntEI1"), Map.entry(2054, "IntEI2"), Map.entry(2055, "IntEI3"),
-          Map.entry(2013, "AngIncD1"), Map.entry(2014, "IntBD1")
+          Map.entry(2055, "IntBD1"), Map.entry(2056, "IntBD2"), Map.entry(2057, "IntBD3"),
+          Map.entry(2058, "IntBI1"), Map.entry(2059, "IntBI2"), Map.entry(2060, "IntBI3"),
+          Map.entry(2061, "IntAI1"), Map.entry(2062, "IntAD2"), Map.entry(2063, "IntAD3"),
+          Map.entry(2064, "IntAD1"), Map.entry(2065, "IntAI2"), Map.entry(2066, "IntAI3"),
+          Map.entry(2067, "IntED1"), Map.entry(2068, "IntED2"), Map.entry(2069, "IntED3"),
+          Map.entry(2070, "IntEI1"), Map.entry(2071, "IntEI2"), Map.entry(2072, "IntEI3"),
+          Map.entry(2073, "IntBD1"), Map.entry(2074, "IntBD2")
       );
 
       // Mapa simplificado para parámetros Sim
       Map<String, List<Integer>> simKeyMap = Map.of(
-          "SimBajasDer", List.of(2024, 2025, 2026),
-          "SimBajasIzq", List.of(2031, 2030, 2029),
-          "SimAltasDer", List.of(2036, 2037, 2038),
-          "SimAltasIzq", List.of(2032, 2033, 2034),
-          "SimExpDer", List.of(2050, 2051, 2052),
-          "SimExpIzq", List.of(2053, 2054, 2055)
+          "SimBajasDer", List.of(2055, 2056, 2057),
+          "SimBajasIzq", List.of(2058, 2059, 2060),
+          "SimAltasDer", List.of(2061, 2062, 2063),
+          "SimAltasIzq", List.of(2064, 2065, 2066),
+          "SimExpDer", List.of(2067, 2068, 2069),
+          "SimExpIzq", List.of(2070, 2071, 2072)
       );
 
       // Inicializar parámetros Sim en "NO" y sumaLuces en 0
       simKeyMap.keySet().forEach(key -> params.put(key, "NO"));
-      float sumaLuces = 0.0f; // Usar float para acumular decimales
+
 
       // Procesar cada medida
       for (Medidas medida : listaMedidas) {
@@ -453,32 +460,26 @@ public class FurService {
           }
       }
 
+        String sumaLucesFormateada = Utils.redondeoNorma(sumaLuces);
+        params.put("sumaLuces", sumaLucesFormateada);
 
+        // Obtener permisibles según el tipo de vehículo
+        Map<String, String> permisibles;
+        if (vehiculoDto.getTipo() == 4) { // Si es motocicleta
+            permisibles = lucesPermisiblesService.getPermisiblesMotocicleta(vehiculoDto);
+        } else {
+            permisibles = lucesPermisiblesService.getPermisiblesVehiculoGeneral(vehiculoDto);
+        }
 
-      String sumaLucesFormateada = Utils.redondeoNorma(sumaLuces);
+        // Agregar los permisibles al mapa de parámetros
+        params.putAll(permisibles);
+        
+        return params;
+    }
 
-      // Agregar resultados finales al mapa (formatear sumaLuces)
-      params.put("sumaLuces", sumaLucesFormateada); // Ej: "125.40"
-
-      // Valores permisibles según tipo de vehículo
-      Map<Integer, Map<String, String>> permisiblesPorTipo = Map.of(
-      // Motocicletas
-      4, Map.of(
-          "perSumaLuces", "---"
-      )
-      );
-
-      // Obtener el tipo de vehículo del contexto
-      Integer tipoVehiculo = vehiculoDto.getTipo();
-      Map<String, String> permisibles = permisiblesPorTipo.getOrDefault(tipoVehiculo, permisiblesPorTipo.get(0));
-      
-      // Agregar los permisibles al mapa de parámetros
-      params.putAll(permisibles);
-      return params;
-  }
-
-  public Map<String, Object> getSuspensionData(List<Medidas> listaMedidasSuspension) {
+  public Map<String, Object> getSuspensionData(List<Medidas> listaMedidasSuspension, VehiculoDto vehiculoDto) {
     Map<String, Object> params = new HashMap<>();
+    SuspensionPermisiblesService suspensionPermisiblesService = new SuspensionPermisiblesService();
 
     // Mapa para parámetros de valorMedida
     Map<Integer, String> keyMap = Map.ofEntries(
@@ -492,26 +493,32 @@ public class FurService {
     for (Medidas medida : listaMedidasSuspension) {
         Integer measureType = medida.getMeasureType();
 
-        // 1. Agregar valores formateados al mapa
+        // Agregar valores formateados al mapa
         if (keyMap.containsKey(measureType)) {
             Float valor = medida.getValorMedida();
-
-            if (valor != null && valor > 40) { // Evitar NullPointerException
+            if (valor != null) {
                 params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
             }
         }
-
     }
 
+    // Obtener permisibles según el tipo de vehículo
+    Map<String, String> permisibles;
+    if (vehiculoDto.getTipo() == 4) { // Si es motocicleta
+        permisibles = suspensionPermisiblesService.getPermisiblesMotocicleta(vehiculoDto);
+    } else {
+        permisibles = suspensionPermisiblesService.getPermisiblesVehiculoGeneral(vehiculoDto);
+    }
 
-    params.put("PerSusp", "40");
+    // Agregar los permisibles al mapa de parámetros
+    params.putAll(permisibles);
 
     return params;
- 
   }
 
-  public Map<String, Object> getFrenosData(List <Medidas> listaMedidasFreno, VehiculoDto vehiculoDto) {
+  public Map<String, Object> getFrenosData(List<Medidas> listaMedidasFreno, VehiculoDto vehiculoDto) {
     Map<String, Object> params = new HashMap<>();
+    FrenosPermisiblesService frenosPermisiblesService = new FrenosPermisiblesService();
 
     Map<Integer, String> keyMap = Map.ofEntries(
       Map.entry(5012, "FrzEje1Izq"), 
@@ -545,7 +552,7 @@ public class FurService {
   
   );
 
-      // Listamos las medidas para obtener FrzSumIzq
+    // Listamos las medidas para obtener FrzSumIzq
     List<Integer> frzSumIzqCodes = List.of(5020, 5021, 5022, 5023);
     // Lista de medidas a ser sumanas para obtenr  PsSumIzq
     List<Integer> listPsSumIzq = List.of(5004, 5005, 5006, 5007);
@@ -566,88 +573,82 @@ public class FurService {
         Integer measureType = medida.getMeasureType();
         Float valor = medida.getValorMedida();
 
-        // 1. Agregar valores formateados al mapa
+        // Agregar valores formateados al mapa
         if (keyMap.containsKey(measureType) && valor != null) {
-          params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
+            params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
         }
 
-        // 2. Sumar los valores de los códigos específicos
+        // Sumar los valores de los códigos específicos
         if (frzSumIzqCodes.contains(measureType) && valor != null) {
-          frzSumIzq += valor;
+            frzSumIzq += valor;
         }
-
         if (listPsSumIzq.contains(measureType) && valor != null) {
-          psSumIzq += valor;
+            psSumIzq += valor;
         }
-
         if (listFrzSumDer.contains(measureType) && valor != null) {
-          frzSumDer += valor;
+            frzSumDer += valor;
         }
-
         if (listPsSumDer.contains(measureType) && valor != null) {
-          psSumDer += valor;
+            psSumDer += valor;
         }
+    }
 
-
-
-      }
-
-    //FRENOS AUXILIARES DATOS
+    // Agregar sumas calculadas al mapa
     params.put("FrzSumIzq", Utils.redondeoNorma(frzSumIzq));
     params.put("PsSumIzq", Utils.redondeoNorma(psSumIzq));
     params.put("FrzSumDer", Utils.redondeoNorma(frzSumDer));
     params.put("PsSumDer", Utils.redondeoNorma(psSumDer));
 
+    // Obtener permisibles según el tipo de vehículo
+    Map<String, String> permisibles;
+    if (vehiculoDto.getTipo() == 4) { // Si es motocicleta
+        permisibles = frenosPermisiblesService.getPermisiblesMotocicleta(vehiculoDto);
+    } else {
+        permisibles = frenosPermisiblesService.getPermisiblesVehiculoGeneral(vehiculoDto);
+    }
 
-    Map<Integer, Map<String, String>> permisiblesPorTipo = Map.of(
-      // Motocicletas
-      4, Map.of(
-          "PerDeseqB", "---",
-          "PerDeseq", "---",
-          "PerEficTotal", "30",
-          "PerEficAux", "---"
-      )
-  );
-      // Obtener el tipo de vehículo del contexto
-      Integer tipoVehiculo = vehiculoDto.getTipo();
-      Map<String, String> permisibles = permisiblesPorTipo.getOrDefault(tipoVehiculo, permisiblesPorTipo.get(0));
-      
-      // Agregar los permisibles al mapa de parámetros
-      params.putAll(permisibles);
+    // Agregar los permisibles al mapa de parámetros
+    params.putAll(permisibles);
 
     return params;
   }
 
-  public Map<String, Object> getDesviacionesData(List <Medidas> listaMedidasDesviacion) {
+  public Map<String, Object> getDesviacionesData(List <Medidas> listaMedidasDesviacion, VehiculoDto vehiculoDto) {
     Map<String, Object> params = new HashMap<>();
+    DesviacionesPermisiblesService desviacionesPermisiblesService = new DesviacionesPermisiblesService();
 
-
-      // Mapa para parámetros de valorMedida
-      Map<Integer, String> keyMap = Map.ofEntries(
-        Map.entry(4000, "DvcnEje1"), 
-        Map.entry(4001, "DvcnEje2"),
-        Map.entry(4002, "DvcnEje3"), 
-        Map.entry(4003, "DvcnEje4"),
-        Map.entry(4004, "DvcnEje5")
+    // Mapa para parámetros de valorMedida
+    Map<Integer, String> keyMap = Map.ofEntries(
+      Map.entry(4000, "DvcnEje1"), 
+      Map.entry(4001, "DvcnEje2"),
+      Map.entry(4002, "DvcnEje3"), 
+      Map.entry(4003, "DvcnEje4"),
+      Map.entry(4004, "DvcnEje5")
     );
-  
+
     // Procesar cada medida
-        for (Medidas medida : listaMedidasDesviacion) {
-          Integer measureType = medida.getMeasureType();
+    for (Medidas medida : listaMedidasDesviacion) {
+      Integer measureType = medida.getMeasureType();
 
-          // 1. Agregar valores formateados al mapa
-          if (keyMap.containsKey(measureType)) {
-              Float valor = medida.getValorMedida();
-
-              if (valor != null ) { // Evitar NullPointerException
-                  params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
-              }
+      // Agregar valores formateados al mapa
+      if (keyMap.containsKey(measureType)) {
+          Float valor = medida.getValorMedida();
+          if (valor != null) {
+              params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
           }
-
       }
+    }
 
+    // Obtener permisibles según el tipo de vehículo
+    Map<String, String> permisibles;
+    if (vehiculoDto.getTipo() == 4) { // Si es motocicleta
+        permisibles = desviacionesPermisiblesService.getPermisiblesMotocicleta(vehiculoDto);
+    } else {
+        permisibles = desviacionesPermisiblesService.getPermisiblesVehiculoGeneral(vehiculoDto);
+    }
 
-    params.put("PerDesv", "10");
+    // Agregar los permisibles al mapa de parámetros
+    params.putAll(permisibles);
 
     return params;
   }
@@ -682,61 +683,76 @@ public class FurService {
     return params;
   }
 
-  public Map<String, Object> getOttoData(List <Medidas> listaMedidasGases) {
+  public Map<String, Object> getOttoData(List <Medidas> listaMedidasGases, VehiculoDto vehiculoDto, HojaPruebas hojaPruebas) {
     Map<String, Object> params = new HashMap<>();
+    GasesPermisiblesService gasesPermisiblesService = new GasesPermisiblesService();
 
-          // Mapa para parámetros de valorMedida
-          Map<Integer, String> keyMap = Map.ofEntries(
-            Map.entry(8005, "RevGasoRal"), 
-            Map.entry(8002, "CORalenti"),
-            Map.entry(8003, "CO2Ralenti"),
-            Map.entry(8004, "O2Ralenti"),
-            Map.entry(8001, "HCRalenti"),
-            Map.entry(8011, "RevGasoCruc"),
-            Map.entry(8008, "COCrucero"),
-            Map.entry(8009, "CO2Crucero"),
-            Map.entry(8010, "O2Crucero"),
-            Map.entry(8007, "HCCrucero"),
-            Map.entry(8006, "TempGasoRal"),
-            Map.entry(8032, "HRGas"),
-            Map.entry(8031, "TempAmbGas")
-          );
+    // Mapa para parámetros de valorMedida
+    Map<Integer, String> keyMap = Map.ofEntries(
+      Map.entry(8005, "RevGasoRal"), 
+      Map.entry(8002, "CORalenti"),
+      Map.entry(8003, "CO2Ralenti"),
+      Map.entry(8004, "O2Ralenti"),
+      Map.entry(8001, "HCRalenti"),
+      Map.entry(8011, "RevGasoCruc"),
+      Map.entry(8008, "COCrucero"),
+      Map.entry(8009, "CO2Crucero"),
+      Map.entry(8010, "O2Crucero"),
+      Map.entry(8007, "HCCrucero"),
+      Map.entry(8006, "TempGasoRal"),
+      Map.entry(8032, "HRGas"),
+      Map.entry(8031, "TempAmbGas")
+    );
 
-            
-        // Procesar cada medida
-        for (Medidas medida : listaMedidasGases) {
-          Integer measureType = medida.getMeasureType();
-
-          // 1. Agregar valores formateados al mapa
-          if (keyMap.containsKey(measureType)) {
-              Float valor = medida.getValorMedida();
-
-          if (valor != null ) { // Evitar NullPointerException
-                  params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
-                }
-          }
-      
+    // Procesar cada medida
+    for (Medidas medida : listaMedidasGases) {
+      Integer measureType = medida.getMeasureType();
+      if (keyMap.containsKey(measureType)) {
+        Float valor = medida.getValorMedida();
+        if (valor != null && vehiculoDto.getTipoCombustible() == 1) {
+          params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
         }
+      }
+    }
 
-      
-  // PERMISIBLES
-      params.put("PerCORal", "PerCORal");
-      params.put("PerCO2", "PerCO2");
-      params.put("PerO2", "PerO2");
-      params.put("PerHCRal", "PerHCRal");
-      params.put("PerCOCruc", "PerCOCruc");
-      params.put("PerCO2", "PerCO2");
-      params.put("PerO2", "PerO2");
-      params.put("PerHCCruc", "PerHCCruc");
-      params.put("Catalizador", "Catalizador"); // valore serian si y no
-      return params;
+    // Obtener permisibles según el tipo de vehículo
+    Map<String, String> permisibles;
+    if (vehiculoDto.getTipo() == 4) { // Si es motocicleta
+      permisibles = gasesPermisiblesService.getPermisiblesMotocicleta(vehiculoDto, hojaPruebas.getFechaIngreso());
+    } else if (vehiculoDto.getTipoCombustible() == 1 || 
+               vehiculoDto.getTipoCombustible() == 10 || 
+               vehiculoDto.getTipoCombustible() == 4 || 
+               vehiculoDto.getTipoCombustible() == 9 || 
+               vehiculoDto.getTipoCombustible() == 2) {
+      permisibles = gasesPermisiblesService.getPermisiblesVehiculoGasolina(vehiculoDto, hojaPruebas.getFechaIngreso());
+    } else {
+      // Para otros tipos de vehículos/combustibles
+      permisibles = new HashMap<>();
+      permisibles.put("PerO2", " ");
+      permisibles.put("PerCO2", " ");
+      permisibles.put("PerHCRal", "---");
+      permisibles.put("PerCORal", "---");
+      permisibles.put("PerHCCruc", "---");
+      permisibles.put("PerCOCruc", "---");
+    }
 
+    // Agregar los permisibles al mapa de parámetros
+    params.putAll(permisibles);
 
+    // Configurar catalizador
+    if (vehiculoDto.getTipo() == 4 && vehiculoDto.getDisenoVehiculo().equalsIgnoreCase("Convencional")) {
+      params.put("Catalizador", vehiculoDto.getCatalizador().toUpperCase().contains("N") ? "NO" : "SI");
+    } else {
+      params.put("Catalizador", "SI");
+    }
+
+    return params;
   }
 
 
-  public Map<String, Object> getDieselData(List <Medidas> listaMedidasGases) {
+  public Map<String, Object> getDieselData(List <Medidas> listaMedidasGases, VehiculoDto vehiculoDto, HojaPruebas hojaPruebas) {
     Map<String, Object> params = new HashMap<>();
+    DieselPermisiblesService dieselPermisiblesService = new DieselPermisiblesService();
 
     Map<Integer, String> keyMap = Map.ofEntries(
       Map.entry(8033, "OpCiclo1"),
@@ -755,25 +771,26 @@ public class FurService {
       Map.entry(8032, "HRDis")
     );
 
+    // Procesar cada medida
+    for (Medidas medida : listaMedidasGases) {
+      Integer measureType = medida.getMeasureType();
 
-        // Procesar cada medida
-        for (Medidas medida : listaMedidasGases) {
-          Integer measureType = medida.getMeasureType();
+      // Agregar valores formateados al mapa
+      if (keyMap.containsKey(measureType)) {
+          Float valor = medida.getValorMedida();
 
-          // 1. Agregar valores formateados al mapa
-          if (keyMap.containsKey(measureType)) {
-              Float valor = medida.getValorMedida();
+           if (valor != null && vehiculoDto.getTipoCombustible() == 3) { // Evitar NullPointerException
+              params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
+          } 
+      }
+    }
 
-               if (valor != null ) { // Evitar NullPointerException
-                  params.put(keyMap.get(measureType), Utils.redondeoNorma(valor));
-              } 
-          }
-      
-        }
+    // Obtener permisibles para vehículos diesel
+    if (vehiculoDto.getTipoCombustible() == 3 || vehiculoDto.getTipoCombustible() == 11) {
+        Map<String, String> permisibles = dieselPermisiblesService.getPermisiblesDiesel(vehiculoDto, hojaPruebas.getFechaIngreso());
+        params.putAll(permisibles);
+    }
 
-        //PERMISIBLES
-    params.put("PerOpac", "PerOpac");
-    params.put("diametro", "diametro");
     return params;
   }
 

@@ -80,6 +80,8 @@ public class VehiculoDto {
     private String nombreCombustible;
     private String nombreCarroceria;
     private String nombreLlantas;
+    private Date fechaIngreso;
+    private String disenoVehiculo;
 
 
     public VehiculoDto() {
@@ -89,7 +91,6 @@ public class VehiculoDto {
     public VehiculoDto(Vehiculos vehiculos, ClasesVehiculo clasesVehiculo, 
     Pais pais, Servicios serviciosVehiculo, MarcasVehiculo marcasVehiculo,
     LineasVehiculo lineasVehiculo, Colores colores, TipoCombustible tipoCombustible, TipoCarroceria tipoCarroceria, Llantas llantas) {
-
 
         this.id = vehiculos.getId();
         this.carroceria = vehiculos.getCarroceria();
@@ -133,7 +134,7 @@ public class VehiculoDto {
         this.codigoInterno = vehiculos.getCodigoInterno();
         this.esEnsenanza = vehiculos.getEsEnsenanza();
         this.fechaVencimientoGnv = vehiculos.getFechaVencimientoGnv();
-        this.conversionGnv = vehiculos.tieneConversionGnv() ? "Y" : "N";
+        this.conversionGnv = vehiculos.getConversionGnv();
         this.potencia = vehiculos.getPotencia() != null ? vehiculos.getPotencia() : 0;
         this.catalizador = vehiculos.getCatalizador();
         this.capacidadCarga = vehiculos.getCapacidadCarga();
@@ -149,6 +150,22 @@ public class VehiculoDto {
         this.nombreCombustible = tipoCombustible.getNombreCombustible(); // Añadido para obtener el tipo de combustible
         this.nombreCarroceria = tipoCarroceria.getNombreCarroceria(); // Añadido para obtener el tipo de carrocería
         this.nombreLlantas = llantas.getNombreLlanta();
+        this.disenoVehiculo = vehiculos.getDiseno();
+    }
 
+    public Date getFechaIngreso() {
+        return fechaIngreso;
+    }
+
+    public void setFechaIngreso(Date fechaIngreso) {
+        this.fechaIngreso = fechaIngreso;
+    }
+
+    public String getDisenoVehiculo() {
+        return disenoVehiculo;
+    }
+
+    public void setDisenoVehiculo(String disenoVehiculo) {
+        this.disenoVehiculo = disenoVehiculo;
     }
 }
